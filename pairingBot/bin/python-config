@@ -1,4 +1,4 @@
-#!/Users/barimohammed/Documents/slackBot/pairingBot/bin/python
+#!/Users/mabari/Documents/pairingBot/pairingBot/bin/python
 
 import sys
 import getopt
