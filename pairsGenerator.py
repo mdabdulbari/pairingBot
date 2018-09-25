@@ -62,6 +62,7 @@ class PairGenerator():
     def final_combinations(this):
         final_combinations = []
         all_combinations = this.generate_all_combinations()
+
         for i in range(0, len(all_combinations)):
             temporory_combinations = [all_combinations[i]]
             for j in range(i + 1, len(all_combinations)):
@@ -74,6 +75,5 @@ class PairGenerator():
 
 pairGenerator = PairGenerator(["A", "B", "C", "D", "E", "F"])
 final_combinations = pairGenerator.final_combinations()
-print(final_combinations)
-
-        
+for combination in final_combinations[0]:
+    print(combination)
