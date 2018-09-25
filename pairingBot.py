@@ -15,7 +15,6 @@ starterbot_id = None
 RTM_READ_DELAY = 1 # 1 second delay between reading from RTM
 MENTION_REGEX = "^<@(|[WU].+?)>(.*)"
 
-#contains key: channel, map: index
 channels = []
 
 def parse_bot_commands(slack_events):
@@ -40,12 +39,18 @@ def parse_direct_mention(message_text):
     # the first group contains the username, the second group contains the remaining message
     return (matches.group(1), matches.group(2).strip()) if matches else (None, None)
 
-def handle_command(command, channel):
+def handle_command(command, channel_id):
     """
         Executes bot command if the command is known
     """
+    current_channel = None
+    for channel in channels:
+        if channel.get_channel_id == channel_id:
+            current_channel = channel
+            break
+
     # Default response is help text for the user
-    default_response = "Here are the commands you can use to interact with me:\n" + "info - about me\n" + "help - things I can do"
+    default_response = "Please use `help` to find ways to interact with me"
 
     # Finds and executes the given command, filling in response
     response = None
@@ -55,22 +60,38 @@ def handle_command(command, channel):
     
     elif command.startswith("who created you?"):
         response = "I was created by Neha and Bari from Pathashala-63, cool people right?"
-
-    elif command.startswith("start"):
-        add_channel(channel)
-        handle_given_names(command[6:], channel)
-        response = "Successfully generated all the combinations, please use `pairs` command for more information"
     
     elif command.startswith("help"):
-        response = "```Here are the things I can do:\n" + "start name1, name2, name3, name4...```"
+        response = "Here are the commands you can use to interact with me:\n" + "`info` - about me\n" + "`pair info` - information about usage of pairBot for pairing\n"
 
     elif command.startswith("info"):
         response = "Hello, My name is PairingBot"
 
+    elif command.startswith("pair info"):
+        response = "`pair name1, name2, name3, name4….` - sends pair combinations everyday at 9:00 AM\n" + "`pair skip` - skips next day\n" + "`pair display`- displays pairs for current day\n"
+
+    elif command.startswith("start"):
+        add_channel(channel_id)
+        handle_given_names(command[6:], current_channel)
+        response = "Successfully generated all the combinations, please use `pairs` command for more information"
+
+    elif command.startswith("pair skip"):
+        current_channel.skip()
+        response = "Skipped next notification"
+
+    elif command.startswith("pair display"):
+        #display current pair by getting from the database
+        response = "This is not yet implimented"
+        
+    if current_channel == None:
+        channel_to_send = channel_id
+    else:
+        channel_to_send = current_channel.get_channel_id()
+
     # Sends the response back to the channel
     slack_client.api_call(
         "chat.postMessage",
-        channel=channel,
+        channel=channel_to_send,
         text=response or default_response
     )
 
@@ -82,7 +103,7 @@ def send_pairs():
     day = datetime.datetime.now().strftime("%A")
     if (current_time == "09:00:00") & (day != "Saturday") & (day != "Sunday"):
         for channel in channels:
-            if(not(channel.should_skip)):
+            if not(channel.should_skip()):
                 #call get combination from database and send for current channel and index
                 # handle_command(list_of_all_combinations[INDEX], pathashalaChannel)
                 channel.increment_index()
@@ -97,7 +118,6 @@ def handle_given_names(names_as_string, channel):
 if __name__ == "__main__":
     if slack_client.rtm_connect(with_team_state=False):
         print("Starter Bot connected and running!")
-        pathashalaChannel = None
         # Read bot's user ID by calling Web API method `auth.test`
         starterbot_id = slack_client.api_call("auth.test")["user_id"]
         while True:
