@@ -19,5 +19,6 @@ class DataBase():
         this.connection.commit()
 
     def get_combination(this, index, channel):
-        channels = this.connection.execute("SELECT * FROM channels;")
-        return channels
+        combination = this.connection.execute("SELECT combinations.combination FROM channels JOIN combinations ON channels.id=combinations.channel_id WHERE channel = '%s' AND day = %d;" % (channel, index))
+        for combination1 in combination:
+            return combination1[0]
